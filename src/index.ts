@@ -25,6 +25,39 @@ export interface Store<DB extends object> {
   listenChanges: () => void
 }
 
+class DBProxy {
+  #s: S<any>
+  constructor(s: S<any>) {
+    this.#s = s
+  }
+  get(_: any, p: string) {
+    return this.#s.dataset(p)
+  }
+  set(): any {
+    throw new TypeError('cannot set on store')
+  }
+  deleteProperty(): any {
+    throw new TypeError('cannot delete on store')
+  }
+  ownKeys() {
+    return this.#s.knownDatasets()
+  }
+  has(_: any, p: string) {
+    return this.#s.hasDataset(p)
+  }
+  defineProperty(): any {
+    throw new TypeError('cannot defineProperty on store')
+  }
+  getOwnPropertyDescriptor(_: any, p: string) {
+    return {
+      value: this.#s.dataset(p),
+      writable: true,
+      enumerable: true,
+      configurable: false,
+    }
+  }
+}
+
 class S<DB extends object> implements Store<DB> {
   readonly #config: FirebaseConfig
   readonly #auth: FirebaseAuth
@@ -52,37 +85,10 @@ class S<DB extends object> implements Store<DB> {
       })
     this.#auth.subscribe(this.#onAuthChange.bind(this), false)
 
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const s = this
-    // @ts-expect-error type bypass
-    this.#dbProxy = new Proxy(Object.freeze({ name: 'rootStore' }), {
-      get(_, p: string) {
-        return s.dataset(p)
-      },
-      set() {
-        throw new TypeError('cannot set on store')
-      },
-      deleteProperty() {
-        throw new TypeError('cannot delete on store')
-      },
-      ownKeys() {
-        return s.knownDatasets()
-      },
-      has(_, p: string) {
-        return s.hasDataset(p)
-      },
-      defineProperty() {
-        throw new TypeError('cannot defineProperty on store')
-      },
-      getOwnPropertyDescriptor(_, p: string) {
-        return {
-          value: s.dataset(p),
-          writable: true,
-          enumerable: true,
-          configurable: false,
-        }
-      },
-    })
+    this.#dbProxy = new Proxy(
+      Object.freeze({ name: 'rootStore' }),
+      new DBProxy(this),
+    )
   }
 
   listenChanges() {
