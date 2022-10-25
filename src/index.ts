@@ -23,7 +23,6 @@ export interface Opts {
 export interface Store<DB extends object> {
   readonly db: DB
   listenChanges: () => void
-  close(): Promise<void>
 }
 
 class S<DB extends object> implements Store<DB> {
@@ -101,10 +100,6 @@ class S<DB extends object> implements Store<DB> {
     return this.#dbProxy
   }
 
-  async close(): Promise<void> {
-    this.#idb?.close()
-  }
-
   async #onAuthChange(user: User | undefined) {
     if (!user) {
       this.#mem = undefined
@@ -122,9 +117,8 @@ class S<DB extends object> implements Store<DB> {
     local.listenChanges(syncDatasetMem(this.#mem))
     const dbName = this.#name ? `${this.#name}_${user.localId}` : user.localId
     this.#idb = await openDB(dbName, 1, {
-      upgrade: db => {
-        local.upgradeDB(db)
-      },
+      upgrade: db => local.upgradeDB(db),
+      blocking: () => this.#idb?.close(),
     })
     await loadDatasetMem(this.#mem, this.#idb)
     local.setDB(this.#idb)
