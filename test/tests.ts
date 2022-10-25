@@ -1,7 +1,11 @@
 import { Auth, User } from '@daaku/firebase-auth'
 import { FirebaseAPI, FirebaseConfig } from '@daaku/firebase-rest-api'
+import { deleteDB } from 'idb'
 
 import { initStore } from '../src/index.js'
+
+const userDaaku = 'daaku'
+const userShah = 'shah'
 
 interface Jedi {
   name: string
@@ -19,17 +23,24 @@ interface DB {
 }
 
 class mockAuth {
-  user?: User
+  localId?: string
   subscribers: { (u: User | undefined): void }[] = []
 
-  static new(user?: User): Auth {
+  static new(localId?: string): Auth {
     const m = new mockAuth()
-    m.user = user
+    m.localId = localId
     // @ts-expect-error type bypass
     return m
   }
 
-  public subscribe(
+  get user(): User | undefined {
+    if (this.localId) {
+      // @ts-expect-error type bypass
+      return { localId: this.localId }
+    }
+  }
+
+  subscribe(
     cb: (user: User | undefined) => void,
     immediate = true,
   ): () => void {
@@ -54,13 +65,42 @@ const fakeConfig = (name: string) =>
     projectID: name,
   })
 
+const testID = () => {
+  return QUnit.config.current.testName.toLowerCase().replaceAll(/[^a-z]/g, '_')
+}
+
+QUnit.hooks.beforeEach(assert => {
+  assert.id = testID()
+})
+
+QUnit.hooks.afterEach(async assert => {
+  if (assert.store) {
+    await assert.store?.close()
+    await deleteDB(`${assert.id}_${userDaaku}`)
+    await deleteDB(`${assert.id}_${userShah}`)
+  }
+})
+
 QUnit.test('Test Logged Out', async assert => {
-  const store = await initStore<DB>({
-    config: fakeConfig('test_logged_out'),
+  const store = (assert.store = await initStore<DB>({
+    config: fakeConfig(assert.id),
     auth: mockAuth.new(),
     api: apiThrows,
-  })
+    name: assert.id,
+  }))
   assert.ok(store.db, 'db exists')
-  assert.ok(store.db.jedi, 'collection exists exists')
+  assert.ok(store.db.jedi, 'collection exists')
+  assert.notOk(store.db.jedi.yoda, 'objects dont exist')
+})
+
+QUnit.test('Test Logged In', async assert => {
+  const store = (assert.store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(userDaaku),
+    api: apiThrows,
+    name: assert.id,
+  }))
+  assert.ok(store.db, 'db exists')
+  assert.ok(store.db.jedi, 'collection exists')
   assert.notOk(store.db.jedi.yoda, 'objects dont exist')
 })

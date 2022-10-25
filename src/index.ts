@@ -23,6 +23,7 @@ export interface Opts {
 export interface Store<DB extends object> {
   readonly db: DB
   listenChanges: () => void
+  close(): Promise<void>
 }
 
 class S<DB extends object> implements Store<DB> {
@@ -98,6 +99,10 @@ class S<DB extends object> implements Store<DB> {
   get db(): DB {
     // @ts-expect-error type bypass
     return this.#dbProxy
+  }
+
+  async close(): Promise<void> {
+    this.#idb?.close()
   }
 
   async #onAuthChange(user: User | undefined) {
