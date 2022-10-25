@@ -19,6 +19,7 @@ const makeID = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 16)
 export interface Opts {
   readonly config: FirebaseConfig
   readonly auth: FirebaseAuth
+  readonly api?: FirebaseAPI
   readonly name?: string
 }
 
@@ -34,20 +35,24 @@ class S<DB extends object> implements Store<DB> {
   readonly #name?: string
   readonly #dbProxy: ProxyHandler<DB>
 
+  // this is reset as auth status changes
+  #datasetProxies: Record<string, ProxyHandler<Record<string, any>>> = {}
+
   // these exist if a user is signed in
   #idb?: IDBPDatabase
   #syncDB?: SyncDB
-  #datasetProxies?: Record<string, ProxyHandler<Record<string, any>>>
   #mem?: any
 
   constructor(opts: Opts) {
     this.#config = opts.config
     this.#auth = opts.auth
     this.#name = opts.name
-    this.#api = makeFirebaseAPI({
-      config: this.#config,
-      tokenSource: () => this.#auth.getBearerToken(),
-    })
+    this.#api =
+      opts.api ??
+      makeFirebaseAPI({
+        config: this.#config,
+        tokenSource: () => this.#auth.getBearerToken(),
+      })
     this.#auth.subscribe(this.#onAuthChange.bind(this), false)
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -104,7 +109,7 @@ class S<DB extends object> implements Store<DB> {
       this.#idb?.close()
       this.#idb = undefined
       this.#syncDB = undefined
-      this.#datasetProxies = undefined
+      this.#datasetProxies = {}
       return
     }
 
@@ -140,7 +145,7 @@ class S<DB extends object> implements Store<DB> {
   }
 
   dataset(dataset: string) {
-    let proxy = this.#datasetProxies?.[dataset]
+    let proxy = this.#datasetProxies[dataset]
     if (!proxy) {
       // @ts-expect-error type bypass
       proxy = new Proxy(Object.freeze({ name: dataset }), {
@@ -148,9 +153,8 @@ class S<DB extends object> implements Store<DB> {
           return null
         },
       })
-      // @ts-expect-error type bypass
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      this.#datasetProxies![dataset] = proxy
+      this.#datasetProxies[dataset] = proxy
     }
     return proxy
   }
