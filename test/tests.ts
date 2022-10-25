@@ -65,9 +65,8 @@ const fakeConfig = (name: string) =>
     projectID: name,
   })
 
-const testID = () => {
-  return QUnit.config.current.testName.toLowerCase().replaceAll(/[^a-z]/g, '_')
-}
+const testID = () =>
+  QUnit.config.current.testName.toLowerCase().replaceAll(/[^a-z]/g, '_')
 
 QUnit.hooks.beforeEach(assert => {
   assert.id = testID()
