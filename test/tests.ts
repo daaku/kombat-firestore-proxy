@@ -1,5 +1,5 @@
 import { Auth, User } from '@daaku/firebase-auth'
-import { FirebaseConfig } from '@daaku/firebase-rest-api'
+import { FirebaseAPI, FirebaseConfig } from '@daaku/firebase-rest-api'
 
 import { initStore } from '../src/index.js'
 
@@ -43,16 +43,22 @@ class mockAuth {
   }
 }
 
+const apiThrows: FirebaseAPI = (method, path, body?) => {
+  console.log(`unexpected firebase API call: ${method} ${path}`, body)
+  throw new Error(`unexpected firebase API call: ${method} ${path}`)
+}
+
+const fakeConfig = (name: string) =>
+  new FirebaseConfig({
+    apiKey: name,
+    projectID: name,
+  })
+
 QUnit.test('Test Logged Out', async assert => {
   const store = await initStore<DB>({
-    config: new FirebaseConfig({
-      apiKey: 'test_logged_out',
-      projectID: 'test_logged_out',
-    }),
+    config: fakeConfig('test_logged_out'),
     auth: mockAuth.new(),
-    api: () => {
-      throw new Error('unimplemented')
-    },
+    api: apiThrows,
   })
   assert.ok(store.db, 'db exists')
   assert.ok(store.db.jedi, 'collection exists exists')
