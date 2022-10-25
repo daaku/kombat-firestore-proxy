@@ -12,9 +12,6 @@ import {
   syncDatasetMem,
 } from '@daaku/kombat-indexed-db'
 import { IDBPDatabase, openDB } from 'idb'
-import { customAlphabet } from 'nanoid'
-
-const makeID = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 16)
 
 export interface Opts {
   readonly config: FirebaseConfig

@@ -54,7 +54,6 @@
     "@daaku/kombat": "^2.0.0",
     "@daaku/kombat-firestore": "^2.1.0",
     "@daaku/kombat-indexed-db": "^3.1.0",
-    "idb": "^7.0.2",
-    "nanoid": "^4.0.0"
+    "idb": "^7.0.2"
   }
 }
