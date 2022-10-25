@@ -50,7 +50,7 @@ QUnit.test('Test Logged Out', async assert => {
       projectID: 'test_logged_out',
     }),
     auth: mockAuth.new(),
-    api: async (method, path, body) => {
+    api: () => {
       throw new Error('unimplemented')
     },
   })
