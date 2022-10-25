@@ -1,0 +1,9 @@
+/.eslintrc.js
+/.github
+/.vscode
+/dist/bundle
+/dist/test
+/pnpm-lock.yaml
+/src
+/test
+/tsconfig.json

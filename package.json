@@ -1,0 +1,60 @@
+{
+  "name": "@daaku/firebase-kombat-object",
+  "author": "Naitik Shah <n@daaku.org>",
+  "version": "0.1.0",
+  "description": "Firebase backed Kombat synchronized offline first persistent object.",
+  "repository": "git@github.com:daaku/firebase-kombat-object",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
+  "eslintConfig": {
+    "extends": "@daaku",
+    "rules": {
+      "@typescript-eslint/no-explicit-any": 0,
+      "@typescript-eslint/no-unused-vars": 0
+    }
+  },
+  "prettier": {
+    "arrowParens": "avoid",
+    "semi": false,
+    "singleQuote": true,
+    "trailingComma": "all"
+  },
+  "scripts": {
+    "check:types": "tsc --noEmit",
+    "check:lint": "eslint --fix --ignore-pattern dist .",
+    "check": "run-p 'check:*' 'test'",
+    "build:js": "tsc",
+    "build:test": "esbuild --bundle --sourcemap --define:process.env.NODE_ENV=\\\"production\\\" --outdir=dist/bundle test/tests.ts",
+    "test": "npm run build:test && qunit-puppeteer",
+    "cover": "npm run test && c8 report",
+    "build": "run-p check:lint test build:js",
+    "deploy": "npm run build && npm publish --access=public",
+    "prepare": "npm run build:js"
+  },
+  "devDependencies": {
+    "@daaku/eslint-config": "^4.0.0",
+    "@daaku/qunit-puppeteer": "^3.0.0",
+    "@types/qunit": "^2.11.2",
+    "c8": "^7.11.3",
+    "esbuild": "^0.15.1",
+    "eslint": "^8.1.0",
+    "npm-run-all": "^4.1.5",
+    "qunit": "^2.17.2",
+    "typescript": "^4.4.4"
+  },
+  "dependencies": {
+    "@daaku/firebase-auth": "^2.4.0",
+    "@daaku/firebase-rest-api": "^2.1.0",
+    "@daaku/kombat": "^2.0.0",
+    "@daaku/kombat-firestore": "^2.1.0",
+    "@daaku/kombat-indexed-db": "^3.1.0",
+    "idb": "^7.0.2",
+    "nanoid": "^4.0.0"
+  }
+}
