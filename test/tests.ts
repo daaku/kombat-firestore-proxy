@@ -71,13 +71,10 @@ const fakeConfig = (name: string) =>
 const testID = () =>
   QUnit.config.current.testName.toLowerCase().replaceAll(/[^a-z]/g, '_')
 
-QUnit.hooks.beforeEach(assert => {
+QUnit.hooks.beforeEach(async assert => {
   assert.id = testID()
-})
-
-QUnit.hooks.afterEach(async assert => {
-  //await deleteDB(`${assert.id}_${userDaaku}`)
-  //await deleteDB(`${assert.id}_${userShah}`)
+  await deleteDB(`${assert.id}_${userDaaku}`)
+  await deleteDB(`${assert.id}_${userShah}`)
 })
 
 QUnit.test('Test Logged Out', async assert => {
@@ -96,14 +93,16 @@ QUnit.test('Test Logged In', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(userDaaku),
-    api: apiThrows,
+    api: async () => [{ missing: true }],
     name: assert.id,
   })
   assert.ok(store.db, 'db exists')
   assert.ok(store.db.jedi, 'collection exists')
-  assert.notOk(store.db.jedi.yoda, 'objects dont exist')
+  assert.notOk(store.db.jedi.yoda, 'yoda doesnt exist')
   store.db.jedi.yoda = yoda
   assert.equal(store.db.jedi.yoda.name, yoda.name, 'expect yoda name')
   assert.equal(store.db.jedi.yoda.age, yoda.age, 'expect yoda age')
   assert.equal(store.db.jedi.yoda.id, 'yoda', 'expect yoda id')
+  delete store.db.jedi.yoda
+  assert.notOk(store.db.jedi.yoda, 'yoda should be deleted')
 })

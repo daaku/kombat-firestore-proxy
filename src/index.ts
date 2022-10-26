@@ -148,7 +148,7 @@ class DatasetProxy {
   }
   get(_: any, id: string) {
     const dataset = this.#s.mem?.[this.#dataset]
-    if (dataset && id in dataset) {
+    if (dataset && id in dataset && !dataset[id].tombstone) {
       return new Proxy({}, new RowProxy(this.#s, this.#dataset, id))
     }
   }
@@ -230,8 +230,17 @@ class DatasetProxy {
     dataset[id] = value
     return true
   }
-  deleteProperty(): any {
-    throw new TypeError('cannot delete on store')
+  deleteProperty(_: any, id: string): any {
+    this.#s.mem[this.#dataset][id].tombstone = true
+    this.#s.syncDB?.send([
+      {
+        dataset: this.#dataset,
+        row: id,
+        column: 'tombstone',
+        value: true,
+      },
+    ])
+    return true
   }
   ownKeys() {
     const dataset = this.#s.mem[this.#dataset]
