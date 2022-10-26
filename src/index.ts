@@ -87,7 +87,6 @@ class RowProxy {
     if (isPrimitive(val) || !Object.hasOwn(row, prop)) {
       return val
     }
-    console.log(this.#s.mem[this.#dataset][this.#id])
     throw new Error(
       `non primitive value for dataset "${this.#dataset}" row with id "${
         this.#id
