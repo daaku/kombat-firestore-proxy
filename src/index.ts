@@ -345,10 +345,6 @@ class S<DB extends object> implements Store<DB> {
     this.syncDB = await SyncDB.new(remote, local)
   }
 
-  hasDataset(dataset: string) {
-    return dataset in this.mem
-  }
-
   datasetProxy(dataset: string) {
     let proxy = this.#datasetProxies[dataset]
     if (!proxy) {
