@@ -125,7 +125,11 @@ class RowProxy {
     return p in this.#s.mem[this.#dataset][this.#id]
   }
   defineProperty(): any {
-    throw new TypeError('cannot defineProperty on store')
+    throw new TypeError(
+      `cannot defineProperty on dataset "${this.#dataset}" with row id ${
+        this.#id
+      }`,
+    )
   }
   getOwnPropertyDescriptor(target: any, prop: string) {
     const value = this.get(target, prop)
@@ -255,7 +259,7 @@ class DatasetProxy {
     return dataset && !!dataset[id]
   }
   defineProperty(): any {
-    throw new TypeError('cannot defineProperty on dataset')
+    throw new TypeError(`cannot defineProperty on dataset "${this.#dataset}"`)
   }
   getOwnPropertyDescriptor(target: any, id: string) {
     const value = this.get(target, id)

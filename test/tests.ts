@@ -106,7 +106,19 @@ QUnit.test('Logged Out', async assert => {
   assert.notOk(store.db.jedi.yoda, 'objects dont exist')
 })
 
-QUnit.test('Cannot Delete Dataset', async assert => {
+QUnit.test('Cannot Set DB', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  assert.throws(() => {
+    store.db.jedi = { yoda }
+  }, 'cannot set')
+})
+
+QUnit.test('Cannot Delete DB', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -117,6 +129,36 @@ QUnit.test('Cannot Delete Dataset', async assert => {
     // @ts-expect-error bypass
     delete store.db.jedi
   }, 'cannot delete')
+})
+
+QUnit.test('Cannot defineProperty DB', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  assert.throws(() => {
+    Object.defineProperty(store.db, 'answer', {
+      value: 42,
+      writable: false,
+    })
+  }, 'cannot define')
+})
+
+QUnit.test('Cannot defineProperty Dataset', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  assert.throws(() => {
+    Object.defineProperty(store.db.jedi, 'yoda', {
+      value: yoda,
+      writable: false,
+    })
+  }, 'cannot define')
 })
 
 const steps = (fns: any) => {
