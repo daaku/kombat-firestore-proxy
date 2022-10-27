@@ -4,4 +4,5 @@ Kombat based Firebase backed synchronized offline first persistent object.
 
 TODO:
 
-- delete on sign out
+- complex object as values
+- arrays as values
