@@ -7,6 +7,7 @@ import {
 import { SyncDB } from '@daaku/kombat'
 import { RemoteFirestore } from '@daaku/kombat-firestore'
 import {
+  ChangeListener,
   loadDatasetMem,
   LocalIndexedDB,
   syncDatasetMem,
@@ -22,7 +23,7 @@ export interface Opts {
 
 export interface Store<DB extends object> {
   readonly db: DB
-  listenChanges: () => void
+  listenChanges(cb: ChangeListener): () => void
 }
 
 const isPrimitive = (v: any) => {
@@ -115,6 +116,7 @@ class RowProxy {
         value: undefined,
       },
     ])
+    return true
   }
   ownKeys() {
     return Object.keys(this.#s.mem[this.#dataset][this.#id])
@@ -280,6 +282,7 @@ class S<DB extends object> implements Store<DB> {
 
   // these exist if a user is signed in
   #idb?: IDBPDatabase
+  #local?: LocalIndexedDB
   syncDB?: SyncDB
   mem?: any
 
@@ -298,8 +301,11 @@ class S<DB extends object> implements Store<DB> {
     this.#dbProxy = new Proxy({}, new DBProxy(this))
   }
 
-  listenChanges() {
-    void 0
+  listenChanges(cb: ChangeListener): () => void {
+    if (!this.#local) {
+      throw new Error('cannot listenChanges without a logged in user')
+    }
+    return this.#local.listenChanges(cb)
   }
 
   static async new(opts: Opts) {
@@ -335,6 +341,7 @@ class S<DB extends object> implements Store<DB> {
     })
     await loadDatasetMem(this.mem, this.#idb)
     local.setDB(this.#idb)
+    this.#local = local
 
     const groupID = this.#name ? `${user.localId}.${this.#name}` : user.localId
     const remote = new RemoteFirestore({
