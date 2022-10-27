@@ -106,7 +106,7 @@ QUnit.test('Logged Out', async assert => {
   assert.notOk(store.db.jedi.yoda, 'objects dont exist')
 })
 
-QUnit.test('Cannot Set DB', async assert => {
+QUnit.test('DBProxy: Cannot Set Property', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -115,10 +115,10 @@ QUnit.test('Cannot Set DB', async assert => {
   })
   assert.throws(() => {
     store.db.jedi = { yoda }
-  }, 'cannot set')
+  }, /cannot set/)
 })
 
-QUnit.test('Cannot Delete DB', async assert => {
+QUnit.test('DBProxy: Cannot Delete Property', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -128,10 +128,10 @@ QUnit.test('Cannot Delete DB', async assert => {
   assert.throws(() => {
     // @ts-expect-error bypass
     delete store.db.jedi
-  }, 'cannot delete')
+  }, /cannot delete/)
 })
 
-QUnit.test('Cannot defineProperty DB', async assert => {
+QUnit.test('DBProxy: Cannot defineProperty', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -143,10 +143,10 @@ QUnit.test('Cannot defineProperty DB', async assert => {
       value: 42,
       writable: false,
     })
-  }, 'cannot define')
+  }, /cannot define/)
 })
 
-QUnit.test('Cannot defineProperty Dataset', async assert => {
+QUnit.test('DatasetProxy: Cannot defineProperty', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -158,7 +158,48 @@ QUnit.test('Cannot defineProperty Dataset', async assert => {
       value: yoda,
       writable: false,
     })
-  }, 'cannot define')
+  }, /cannot define/)
+})
+
+QUnit.test('DatasetProxy: Cannot Set when Logged Out', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  assert.throws(() => {
+    store.db.jedi.yoda = yoda
+  }, /cannot save data without logged in/)
+})
+
+QUnit.test('DatasetProxy: Cannot Set Non Object Value', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  // @ts-expect-error mucking with internal state
+  store.mem = {}
+  assert.throws(() => {
+    // @ts-expect-error checking for non object set
+    store.db.jedi.yoda = 42
+  }, /cannot use non object/)
+})
+
+QUnit.test('DatasetProxy: id mismatch', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  // @ts-expect-error mucking with internal state
+  store.mem = {}
+  assert.throws(() => {
+    store.db.jedi.yoda = { id: 'joda', name: 'yoda' }
+  }, /id mismatch/)
 })
 
 const steps = (fns: any) => {
