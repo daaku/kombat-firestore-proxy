@@ -72,78 +72,6 @@ class DBProxy {
   }
 }
 
-class RowProxy {
-  #s: S<any>
-  #dataset: string
-  #id: string
-  constructor(s: S<any>, dataset: string, id: string) {
-    this.#s = s
-    this.#dataset = dataset
-    this.#id = id
-  }
-  get(_: any, prop: string) {
-    const row = this.#s.mem[this.#dataset][this.#id]
-    const val = row[prop]
-    // hasOwn allows pass-thru of prototype properties like constructor
-    if (isPrimitive(val) || !Object.hasOwn(row, prop)) {
-      return val
-    }
-    throw new Error(
-      `non primitive value for dataset "${this.#dataset}" row with id "${
-        this.#id
-      }" and property "${prop}" of type "${typeof val}" and value "${val}"`,
-    )
-  }
-  set(_: any, prop: string, value: any): any {
-    this.#s.mem[this.#dataset][this.#id][prop] = value
-    this.#s.syncDB?.send([
-      {
-        dataset: this.#dataset,
-        row: this.#id,
-        column: prop,
-        value: value,
-      },
-    ])
-    return true
-  }
-  deleteProperty(_: any, prop: string): any {
-    delete this.#s.mem[this.#dataset][this.#id][prop]
-    this.#s.syncDB?.send([
-      {
-        dataset: this.#dataset,
-        row: this.#id,
-        column: prop,
-        value: undefined,
-      },
-    ])
-    return true
-  }
-  ownKeys() {
-    return Object.keys(this.#s.mem[this.#dataset][this.#id])
-  }
-  has(_: any, p: string) {
-    return p in this.#s.mem[this.#dataset][this.#id]
-  }
-  defineProperty(): any {
-    throw new TypeError(
-      `cannot defineProperty on dataset "${this.#dataset}" with row id ${
-        this.#id
-      }`,
-    )
-  }
-  getOwnPropertyDescriptor(target: any, prop: string) {
-    const value = this.get(target, prop)
-    if (value) {
-      return {
-        value,
-        writable: true,
-        enumerable: true,
-        configurable: true,
-      }
-    }
-  }
-}
-
 class DatasetProxy {
   #s: S<any>
   #dataset: string
@@ -263,6 +191,78 @@ class DatasetProxy {
   }
   getOwnPropertyDescriptor(target: any, id: string) {
     const value = this.get(target, id)
+    if (value) {
+      return {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      }
+    }
+  }
+}
+
+class RowProxy {
+  #s: S<any>
+  #dataset: string
+  #id: string
+  constructor(s: S<any>, dataset: string, id: string) {
+    this.#s = s
+    this.#dataset = dataset
+    this.#id = id
+  }
+  get(_: any, prop: string) {
+    const row = this.#s.mem[this.#dataset][this.#id]
+    const val = row[prop]
+    // hasOwn allows pass-thru of prototype properties like constructor
+    if (isPrimitive(val) || !Object.hasOwn(row, prop)) {
+      return val
+    }
+    throw new Error(
+      `non primitive value for dataset "${this.#dataset}" row with id "${
+        this.#id
+      }" and property "${prop}" of type "${typeof val}" and value "${val}"`,
+    )
+  }
+  set(_: any, prop: string, value: any): any {
+    this.#s.mem[this.#dataset][this.#id][prop] = value
+    this.#s.syncDB?.send([
+      {
+        dataset: this.#dataset,
+        row: this.#id,
+        column: prop,
+        value: value,
+      },
+    ])
+    return true
+  }
+  deleteProperty(_: any, prop: string): any {
+    delete this.#s.mem[this.#dataset][this.#id][prop]
+    this.#s.syncDB?.send([
+      {
+        dataset: this.#dataset,
+        row: this.#id,
+        column: prop,
+        value: undefined,
+      },
+    ])
+    return true
+  }
+  ownKeys() {
+    return Object.keys(this.#s.mem[this.#dataset][this.#id])
+  }
+  has(_: any, p: string) {
+    return p in this.#s.mem[this.#dataset][this.#id]
+  }
+  defineProperty(): any {
+    throw new TypeError(
+      `cannot defineProperty on dataset "${this.#dataset}" with row id ${
+        this.#id
+      }`,
+    )
+  }
+  getOwnPropertyDescriptor(target: any, prop: string) {
+    const value = this.get(target, prop)
     if (value) {
       return {
         value,
