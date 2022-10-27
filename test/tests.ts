@@ -105,6 +105,19 @@ QUnit.test('Test Logged Out', async assert => {
   assert.notOk(store.db.jedi.yoda, 'objects dont exist')
 })
 
+QUnit.test('Cannot Delete Dataset', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  assert.throws(() => {
+    // @ts-expect-error bypass
+    delete store.db.jedi
+  }, 'cannot delete')
+})
+
 const steps = (fns: any) => {
   let count = 0
   return (...rest: any) => {
