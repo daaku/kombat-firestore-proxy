@@ -9,6 +9,7 @@ import { initStore } from '../src/index.js'
 const userDaaku = 'daaku'
 const userShah = 'shah'
 const yoda = Object.freeze({ name: 'yoda', age: 942 })
+const vader = Object.freeze({ name: 'vader', convert: true })
 
 const apiKey = 'AIzaSyCnFgFqO3d7RbJDcNAp_eO21KSOISCP9IU'
 const projectID = 'fidb-unit-test'
@@ -101,7 +102,7 @@ QUnit.test('Logged Out', async assert => {
     name: assert.id,
   })
   assert.ok(store.db, 'db exists')
-  assert.ok(store.db.jedi, 'collection exists')
+  assert.ok(store.db.jedi, 'dataset exists')
   assert.notOk(store.db.jedi.yoda, 'objects dont exist')
 })
 
@@ -182,6 +183,20 @@ QUnit.test('Logged In Integration', async assert => {
           },
         })
 
+        store.db.sith.vader = vader
+        assert.propContains(store.db.sith.vader, vader, 'expect vader')
+      },
+      (changes: Changes) => {
+        assert.propContains(changes, {
+          sith: { vader },
+        })
+
+        assert.deepEqual(
+          Object.keys(store.db),
+          ['jedi', 'sith'],
+          'expect both dataset in keys',
+        )
+
         delete store.db.jedi.yoda.age
         assert.notOk(store.db.jedi.yoda.age, 'expect no age')
       },
@@ -218,12 +233,15 @@ QUnit.test('Logged In Integration', async assert => {
   )
 
   assert.ok(store.db, 'db exists')
-  assert.ok(store.db.jedi, 'collection exists')
+  assert.deepEqual(Object.keys(store.db), [], 'no datasets')
+  assert.false('jedi' in store.db, 'jedi dataset doesnt exist yet')
+  assert.ok(store.db.jedi, 'a named dataset always exists')
   assert.notOk(store.db.jedi.yoda, 'yoda doesnt exist')
   store.db.jedi.yoda = yoda
   assert.equal(store.db.jedi.yoda.name, yoda.name, 'expect yoda name')
   assert.equal(store.db.jedi.yoda.age, yoda.age, 'expect yoda age')
   assert.equal(store.db.jedi.yoda.id, 'yoda', 'expect yoda id')
+  assert.true('jedi' in store.db, 'jedi dataset now exists')
   await stepsWait
 
   // TODO: how to ensure API calls have finished before executing this?
