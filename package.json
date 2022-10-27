@@ -1,9 +1,9 @@
 {
-  "name": "@daaku/firebase-kombat-object",
+  "name": "@daaku/kombat-firebase-proxy",
   "author": "Naitik Shah <n@daaku.org>",
   "version": "0.1.0",
-  "description": "Firebase backed Kombat synchronized offline first persistent object.",
-  "repository": "git@github.com:daaku/firebase-kombat-object",
+  "description": "Kombat based Firebase backed synchronized offline first persistent object.",
+  "repository": "git@github.com:daaku/kombat-firestore-proxy",
   "license": "MIT",
   "type": "module",
   "exports": {

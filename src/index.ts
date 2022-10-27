@@ -367,11 +367,3 @@ export const initStore = async <DB extends object>(
 ): Promise<Store<DB>> =>
   // @ts-expect-error type bypass
   S.new(opts)
-
-// on property write, apply the change to in-mem object immediately
-// filter writes that did not change values
-// syncDB.send the message (it already delays sync)
-// schedule a change event in the next tick
-// when syncDB applyChanges come thru, apply all chanages to in-mem again
-// fire change event after filtering for unchanged values
-// make sure id property is immutable and matches key in dataset

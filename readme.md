@@ -1,11 +1,7 @@
-firebase-kombat-object
-=======
+# kombat-firebase-proxy
 
-Firebase backed Kombat synchronized offline first persistent object.
+Kombat based Firebase backed synchronized offline first persistent object.
 
 TODO:
-- proxy object
-- onChange events
-- tombstone handling
-- upsert behavior
+
 - delete on sign out
