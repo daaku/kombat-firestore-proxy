@@ -93,7 +93,7 @@ QUnit.hooks.beforeEach(async assert => {
   await deleteDB(`${assert.id}_${userShah}`)
 })
 
-QUnit.test('Test Logged Out', async assert => {
+QUnit.test('Logged Out', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -131,7 +131,7 @@ const steps = (fns: any) => {
   }
 }
 
-QUnit.test('Test Logged In', async assert => {
+QUnit.test('Logged In Integration', async assert => {
   const login = nanoid()
   const password = nanoid()
   const email = `${login}@${domain}`
