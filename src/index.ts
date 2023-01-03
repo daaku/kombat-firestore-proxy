@@ -107,9 +107,7 @@ class DatasetProxy {
 
     // ensure we have an ID and it is what we expect
     if ('id' in value) {
-      // @ts-expect-error id is special
       if (id !== value.id) {
-        // @ts-expect-error id is special
         const valueID = value.id
         throw new Error(
           `id mismatch in dataset "${
