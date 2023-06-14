@@ -41,7 +41,7 @@
     "@daaku/eslint-config": "^4.0.0",
     "@daaku/qunit-puppeteer": "^3.0.0",
     "@types/qunit": "^2.11.2",
-    "c8": "^7.11.3",
+    "c8": "^8.0.0",
     "esbuild": "^0.18",
     "eslint": "^8.1.0",
     "nanoid": "^4.0.0",
