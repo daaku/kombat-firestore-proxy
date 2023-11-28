@@ -292,10 +292,10 @@ class TheStore<DB extends object> implements Store<DB> {
   readonly #api: FirebaseAPI
   readonly #name?: string
   readonly #dbProxy: ProxyHandler<DB>
+  readonly #pending: Set<Promise<void>> = new Set()
 
   // this is reset as auth status changes
   #datasetProxies: Record<string, ProxyHandler<Record<string, any>>> = {}
-  #pending: Set<Promise<void>> = new Set()
 
   // these exist if a user is signed in
   #idb?: IDBPDatabase
@@ -347,13 +347,11 @@ class TheStore<DB extends object> implements Store<DB> {
       this.#idb = undefined
       this.syncDB = undefined
       this.#datasetProxies = {}
-      this.#pending = new Set()
       return
     }
 
     this.mem = {}
     this.#datasetProxies = {}
-    this.#pending = new Set()
 
     const local = new LocalIndexedDB()
     local.listenChanges(syncDatasetMem(this.mem))
