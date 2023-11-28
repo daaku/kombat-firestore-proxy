@@ -331,7 +331,7 @@ QUnit.test('Logged In Integration', async assert => {
   assert.true('jedi' in store.db, 'jedi dataset now exists')
   await stepsWait
 
-  // TODO: how to ensure API calls have finished before executing this?
   // TODO: delete all data?
-  //await auth.delete()
+  await store.close()
+  await auth.delete()
 })

@@ -23,8 +23,16 @@ export interface Opts {
 
 // Store provides the DB, that proxy to your various datasets.
 export interface Store<DB extends object> {
+  // Your datasets, containing the the rows of data.
   readonly db: DB
+
+  // Listen to changes on the data.
   listenChanges(cb: ChangeListener): () => void
+
+  // Close ensures all background async writes have submitted to the underlying
+  // SyncDB. This is important because the proxy provides a synchronous API on
+  // what is underneath an asynchronous API.
+  close(): Promise<void>
 }
 
 const isPrimitive = (v: any) => {
@@ -123,7 +131,7 @@ class DatasetProxy {
 
     // only send messages for changed values.
     const existing = this.#store.mem[this.#dataset]?.[id] ?? {}
-    this.#store.syncDB?.send(
+    this.#store.send(
       // @ts-expect-error typescript doesn't understand filter
       [
         // update changed properties
@@ -166,7 +174,7 @@ class DatasetProxy {
   }
   deleteProperty(_: any, id: string): any {
     this.#store.mem[this.#dataset][id].tombstone = true
-    this.#store.syncDB?.send([
+    this.#store.send([
       {
         dataset: this.#dataset,
         row: id,
@@ -226,7 +234,7 @@ class RowProxy {
     )
   }
   set(_: any, prop: string, value: any): any {
-    this.#store.syncDB?.send([
+    this.#store.send([
       {
         dataset: this.#dataset,
         row: this.#id,
@@ -238,7 +246,7 @@ class RowProxy {
     return true
   }
   deleteProperty(_: any, prop: string): any {
-    this.#store.syncDB?.send([
+    this.#store.send([
       {
         dataset: this.#dataset,
         row: this.#id,
@@ -287,6 +295,7 @@ class TheStore<DB extends object> implements Store<DB> {
 
   // this is reset as auth status changes
   #datasetProxies: Record<string, ProxyHandler<Record<string, any>>> = {}
+  #pending: Set<Promise<void>> = new Set()
 
   // these exist if a user is signed in
   #idb?: IDBPDatabase
@@ -307,6 +316,10 @@ class TheStore<DB extends object> implements Store<DB> {
     this.#auth.subscribe(this.#onAuthChange.bind(this), false)
 
     this.#dbProxy = new Proxy({}, new DBProxy(this))
+  }
+
+  async close(): Promise<void> {
+    await Promise.allSettled(this.#pending.values())
   }
 
   listenChanges(cb: ChangeListener): () => void {
@@ -334,11 +347,13 @@ class TheStore<DB extends object> implements Store<DB> {
       this.#idb = undefined
       this.syncDB = undefined
       this.#datasetProxies = {}
+      this.#pending = new Set()
       return
     }
 
     this.mem = {}
     this.#datasetProxies = {}
+    this.#pending = new Set()
 
     const local = new LocalIndexedDB()
     local.listenChanges(syncDatasetMem(this.mem))
@@ -369,6 +384,14 @@ class TheStore<DB extends object> implements Store<DB> {
       )
     }
     return proxy
+  }
+
+  // wrap the syncDB send and hold on to the promises until they settle. if we
+  // try to close the DB, we'll wait on the ones that have not yet settled.
+  send(...args: Parameters<SyncDB['send']>) {
+    const r = this.syncDB!.send(...args)
+    this.#pending.add(r)
+    r.finally(() => this.#pending.delete(r))
   }
 }
 
