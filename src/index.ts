@@ -29,10 +29,10 @@ export interface Store<DB extends object> {
   // Listen to changes on the data.
   listenChanges(cb: ChangeListener): () => void
 
-  // Close ensures all background async writes have submitted to the underlying
+  // Settle ensures all background async writes have submitted to the underlying
   // SyncDB. This is important because the proxy provides a synchronous API on
   // what is underneath an asynchronous API.
-  close(): Promise<void>
+  settle(): Promise<void>
 }
 
 const isPrimitive = (v: any) => {
@@ -173,7 +173,6 @@ class DatasetProxy {
     return true
   }
   deleteProperty(_: any, id: string): any {
-    this.#store.mem[this.#dataset][id].tombstone = true
     this.#store.send([
       {
         dataset: this.#dataset,
@@ -182,6 +181,7 @@ class DatasetProxy {
         value: true,
       },
     ])
+    this.#store.mem[this.#dataset][id].tombstone = true
     return true
   }
   ownKeys() {
@@ -318,7 +318,7 @@ class TheStore<DB extends object> implements Store<DB> {
     this.#dbProxy = new Proxy({}, new DBProxy(this))
   }
 
-  async close(): Promise<void> {
+  async settle(): Promise<void> {
     await Promise.allSettled(this.#pending.values())
   }
 
@@ -384,8 +384,8 @@ class TheStore<DB extends object> implements Store<DB> {
     return proxy
   }
 
-  // wrap the syncDB send and hold on to the promises until they settle. if we
-  // try to close the DB, we'll wait on the ones that have not yet settled.
+  // wrap the syncDB send and hold on to the promises until they settle,
+  // allowing callers to let things settle.
   send(...args: Parameters<SyncDB['send']>) {
     const r = this.syncDB!.send(...args)
     this.#pending.add(r)

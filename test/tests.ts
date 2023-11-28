@@ -332,6 +332,6 @@ QUnit.test('Logged In Integration', async assert => {
   await stepsWait
 
   // TODO: delete all data?
-  await store.close()
+  await store.settle()
   await auth.delete()
 })
