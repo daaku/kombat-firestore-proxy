@@ -121,6 +121,7 @@ class DatasetProxy {
       value.id = id
     }
 
+    // only send messages for changed values.
     const existing = this.#store.mem[this.#dataset]?.[id] ?? {}
     this.#store.syncDB?.send(
       // @ts-expect-error typescript doesn't understand filter
@@ -155,6 +156,7 @@ class DatasetProxy {
           .filter(v => v),
       ],
     )
+    // synchronously update our in-memory dataset.
     let dataset = this.#store.mem[this.#dataset]
     if (!dataset) {
       dataset = this.#store.mem[this.#dataset] = {}
@@ -182,8 +184,8 @@ class DatasetProxy {
     return []
   }
   has(_: any, id: string) {
-    const dataset = this.#store.mem[this.#dataset]
-    return dataset && !!dataset[id]
+    const row = this.#store.mem[this.#dataset]?.[id]
+    return row && !row.tombstone
   }
   defineProperty(): any {
     throw new TypeError(`cannot defineProperty on dataset "${this.#dataset}"`)
@@ -202,16 +204,16 @@ class DatasetProxy {
 }
 
 class RowProxy {
-  #s: TheStore<any>
+  #store: TheStore<any>
   #dataset: string
   #id: string
-  constructor(s: TheStore<any>, dataset: string, id: string) {
-    this.#s = s
+  constructor(store: TheStore<any>, dataset: string, id: string) {
+    this.#store = store
     this.#dataset = dataset
     this.#id = id
   }
   get(_: any, prop: string) {
-    const row = this.#s.mem[this.#dataset][this.#id]
+    const row = this.#store.mem[this.#dataset][this.#id]
     const val = row[prop]
     // hasOwn allows pass-thru of prototype properties like constructor
     if (isPrimitive(val) || !Object.hasOwn(row, prop)) {
@@ -224,8 +226,7 @@ class RowProxy {
     )
   }
   set(_: any, prop: string, value: any): any {
-    this.#s.mem[this.#dataset][this.#id][prop] = value
-    this.#s.syncDB?.send([
+    this.#store.syncDB?.send([
       {
         dataset: this.#dataset,
         row: this.#id,
@@ -233,11 +234,11 @@ class RowProxy {
         value: value,
       },
     ])
+    this.#store.mem[this.#dataset][this.#id][prop] = value
     return true
   }
   deleteProperty(_: any, prop: string): any {
-    delete this.#s.mem[this.#dataset][this.#id][prop]
-    this.#s.syncDB?.send([
+    this.#store.syncDB?.send([
       {
         dataset: this.#dataset,
         row: this.#id,
@@ -245,13 +246,14 @@ class RowProxy {
         value: undefined,
       },
     ])
+    delete this.#store.mem[this.#dataset][this.#id][prop]
     return true
   }
   ownKeys() {
-    return Object.keys(this.#s.mem[this.#dataset][this.#id])
+    return Object.keys(this.#store.mem[this.#dataset][this.#id])
   }
   has(_: any, p: string) {
-    return p in this.#s.mem[this.#dataset][this.#id]
+    return p in this.#store.mem[this.#dataset][this.#id]
   }
   defineProperty(): any {
     throw new TypeError(
