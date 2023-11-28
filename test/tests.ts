@@ -1,10 +1,14 @@
+import QUnit from 'qunit'
+import 'qunit/qunit/qunit.css'
 import { Auth, User } from '@daaku/firebase-auth'
 import { FirebaseAPI, FirebaseConfig } from '@daaku/firebase-rest-api'
 import { Changes } from '@daaku/kombat-indexed-db'
 import { deleteDB } from 'idb'
 import { customAlphabet } from 'nanoid'
-
 import { initStore } from '../src/index.js'
+
+// @ts-ignore
+window.HARNESS_RUN_END && QUnit.on('runEnd', window.HARNESS_RUN_END)
 
 const userDaaku = 'daaku'
 const userShah = 'shah'

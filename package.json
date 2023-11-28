@@ -12,13 +12,6 @@
       "types": "./dist/src/index.d.ts"
     }
   },
-  "eslintConfig": {
-    "extends": "@daaku",
-    "rules": {
-      "@typescript-eslint/no-explicit-any": 0,
-      "@typescript-eslint/no-unused-vars": 0
-    }
-  },
   "prettier": {
     "arrowParens": "avoid",
     "semi": false,
@@ -26,28 +19,20 @@
     "trailingComma": "all"
   },
   "scripts": {
-    "check:types": "tsc --noEmit",
-    "check:lint": "eslint --fix --ignore-pattern dist .",
-    "check": "run-p 'check:*' 'test'",
-    "build:js": "tsc",
-    "build:test": "esbuild --bundle --sourcemap --define:process.env.NODE_ENV=\\\"production\\\" --outdir=dist/bundle test/tests.ts",
-    "test": "npm run build:test && qunit-puppeteer",
+    "build": "tsc",
+    "test": "vite build && qunit-puppeteer",
     "cover": "npm run test && c8 report",
-    "build": "run-p check:lint test build:js",
-    "deploy": "npm run build && npm publish --access=public",
-    "prepare": "npm run build:js"
+    "deploy": "npm run test && npm publish --access=public",
+    "prepare": "npm run build",
+    "dev": "vite"
   },
   "devDependencies": {
-    "@daaku/eslint-config": "^4.0.0",
-    "@daaku/qunit-puppeteer": "^3.0.0",
+    "@daaku/qunit-puppeteer": "^3.3.0",
     "@types/qunit": "^2.11.2",
     "c8": "^8.0.0",
-    "esbuild": "^0.19",
-    "eslint": "^8.1.0",
     "nanoid": "^5.0.1",
-    "npm-run-all": "^4.1.5",
     "qunit": "^2.17.2",
-    "typescript": "^4.4.4"
+    "typescript": "^5.3.2"
   },
   "dependencies": {
     "@daaku/firebase-auth": "^2.4.0",
