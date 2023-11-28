@@ -363,15 +363,15 @@ class TheStore<DB extends object> implements Store<DB> {
   datasetProxy(dataset: string) {
     let proxy = this.#datasetProxies[dataset]
     if (!proxy) {
-      proxy = new Proxy({}, new DatasetProxy(this, dataset))
-      this.#datasetProxies[dataset] = proxy
+      this.#datasetProxies[dataset] = proxy = new Proxy(
+        {},
+        new DatasetProxy(this, dataset),
+      )
     }
     return proxy
   }
 }
 
-export const initStore = async <DB extends object>(
-  opts: Opts,
-): Promise<Store<DB>> =>
+export const initStore = <DB extends object>(opts: Opts): Promise<Store<DB>> =>
   // @ts-expect-error type bypass
   TheStore.new(opts)
