@@ -21,6 +21,7 @@ export interface Opts {
   readonly name?: string
 }
 
+// Store provides the DB, that proxy to your various datasets.
 export interface Store<DB extends object> {
   readonly db: DB
   listenChanges(cb: ChangeListener): () => void
@@ -39,12 +40,12 @@ const deepEqual = (a: any, b: any) => {
 }
 
 class DBProxy {
-  #s: S<any>
-  constructor(s: S<any>) {
-    this.#s = s
+  #store: TheStore<any>
+  constructor(s: TheStore<any>) {
+    this.#store = s
   }
   get(_: any, dataset: string) {
-    return this.#s.datasetProxy(dataset)
+    return this.#store.datasetProxy(dataset)
   }
   set(): any {
     throw new TypeError('cannot set on DB')
@@ -53,18 +54,18 @@ class DBProxy {
     throw new TypeError('cannot delete on DB')
   }
   ownKeys() {
-    return Object.keys(this.#s.mem)
+    return Object.keys(this.#store.mem)
   }
   has(_: any, dataset: string) {
-    const mem = this.#s.mem
-    return mem && dataset in this.#s.mem
+    const mem = this.#store.mem
+    return mem && dataset in this.#store.mem
   }
   defineProperty(): any {
     throw new TypeError('cannot defineProperty on DB')
   }
   getOwnPropertyDescriptor(_: any, p: string) {
     return {
-      value: this.#s.datasetProxy(p),
+      value: this.#store.datasetProxy(p),
       writable: true,
       enumerable: true,
       configurable: true,
@@ -73,20 +74,20 @@ class DBProxy {
 }
 
 class DatasetProxy {
-  #s: S<any>
+  #store: TheStore<any>
   #dataset: string
-  constructor(s: S<any>, dataset: string) {
-    this.#s = s
+  constructor(s: TheStore<any>, dataset: string) {
+    this.#store = s
     this.#dataset = dataset
   }
   get(_: any, id: string) {
-    const dataset = this.#s.mem?.[this.#dataset]
+    const dataset = this.#store.mem?.[this.#dataset]
     if (dataset && id in dataset && !dataset[id].tombstone) {
-      return new Proxy({}, new RowProxy(this.#s, this.#dataset, id))
+      return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
     }
   }
   set(_: any, id: string, value: object): any {
-    if (!this.#s.mem) {
+    if (!this.#store.mem) {
       throw new Error(
         `cannot save data without logged in user in dataset "${
           this.#dataset
@@ -120,8 +121,8 @@ class DatasetProxy {
       value.id = id
     }
 
-    const existing = this.#s.mem[this.#dataset]?.[id] ?? {}
-    this.#s.syncDB?.send(
+    const existing = this.#store.mem[this.#dataset]?.[id] ?? {}
+    this.#store.syncDB?.send(
       // @ts-expect-error typescript doesn't understand filter
       [
         // update changed properties
@@ -154,16 +155,16 @@ class DatasetProxy {
           .filter(v => v),
       ],
     )
-    let dataset = this.#s.mem[this.#dataset]
+    let dataset = this.#store.mem[this.#dataset]
     if (!dataset) {
-      dataset = this.#s.mem[this.#dataset] = {}
+      dataset = this.#store.mem[this.#dataset] = {}
     }
     dataset[id] = value
     return true
   }
   deleteProperty(_: any, id: string): any {
-    this.#s.mem[this.#dataset][id].tombstone = true
-    this.#s.syncDB?.send([
+    this.#store.mem[this.#dataset][id].tombstone = true
+    this.#store.syncDB?.send([
       {
         dataset: this.#dataset,
         row: id,
@@ -174,14 +175,14 @@ class DatasetProxy {
     return true
   }
   ownKeys() {
-    const dataset = this.#s.mem[this.#dataset]
+    const dataset = this.#store.mem[this.#dataset]
     if (dataset) {
       return Object.keys(dataset)
     }
     return []
   }
   has(_: any, id: string) {
-    const dataset = this.#s.mem[this.#dataset]
+    const dataset = this.#store.mem[this.#dataset]
     return dataset && !!dataset[id]
   }
   defineProperty(): any {
@@ -201,10 +202,10 @@ class DatasetProxy {
 }
 
 class RowProxy {
-  #s: S<any>
+  #s: TheStore<any>
   #dataset: string
   #id: string
-  constructor(s: S<any>, dataset: string, id: string) {
+  constructor(s: TheStore<any>, dataset: string, id: string) {
     this.#s = s
     this.#dataset = dataset
     this.#id = id
@@ -272,7 +273,10 @@ class RowProxy {
   }
 }
 
-class S<DB extends object> implements Store<DB> {
+// TheStore is the internal concrete implementation which is returned. The
+// TypeScript API is limited by the interface it implements. The other bits are
+// for internal consumption.
+class TheStore<DB extends object> implements Store<DB> {
   readonly #config: FirebaseConfig
   readonly #auth: FirebaseAuth
   readonly #api: FirebaseAPI
@@ -311,7 +315,7 @@ class S<DB extends object> implements Store<DB> {
   }
 
   static async new(opts: Opts) {
-    const s = new S(opts)
+    const s = new TheStore(opts)
     await s.#onAuthChange(s.#auth.user)
     return s
   }
@@ -368,4 +372,4 @@ export const initStore = async <DB extends object>(
   opts: Opts,
 ): Promise<Store<DB>> =>
   // @ts-expect-error type bypass
-  S.new(opts)
+  TheStore.new(opts)
