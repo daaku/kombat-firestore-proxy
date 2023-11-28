@@ -8,9 +8,9 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: current
       - uses: actions/checkout@v4
       - name: Dependencies
         run: npm install
-      - name: Check
+      - name: Test
         run: npm run cover
