@@ -94,7 +94,7 @@ class DatasetProxy {
       return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
     }
   }
-  set(_: unknown, id: string, value: object): any {
+  set(_: unknown, id: string, value: any): any {
     if (!this.#store.mem) {
       throw new Error(
         `cannot save data without logged in user in dataset "${
@@ -125,7 +125,6 @@ class DatasetProxy {
         )
       }
     } else {
-      // @ts-expect-error id is special
       value.id = id
     }
 
