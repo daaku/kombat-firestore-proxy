@@ -320,6 +320,7 @@ class TheStore<DB extends object> implements Store<DB> {
 
   async settle(): Promise<void> {
     await Promise.allSettled(this.#pending.values())
+    await this.syncDB?.settle()
   }
 
   listenChanges(cb: ChangeListener): () => void {
