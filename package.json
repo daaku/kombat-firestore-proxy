@@ -40,6 +40,7 @@
     "@daaku/kombat": "^2.4.0",
     "@daaku/kombat-firestore": "^2.2.0",
     "@daaku/kombat-indexed-db": "^3.1.0",
+    "dequal": "^2.0.3",
     "idb": "^7.0.2"
   }
 }

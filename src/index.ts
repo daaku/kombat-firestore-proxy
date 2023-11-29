@@ -13,6 +13,7 @@ import {
   syncDatasetMem,
 } from '@daaku/kombat-indexed-db'
 import { IDBPDatabase, openDB } from 'idb'
+import { dequal } from 'dequal'
 
 export interface Opts {
   readonly config: FirebaseConfig
@@ -40,11 +41,6 @@ const isPrimitive = (v: unknown) => {
     return v === null
   }
   return typeof v !== 'function'
-}
-
-// TODO: fixme
-const deepEqual = (a: unknown, b: unknown) => {
-  return a === b
 }
 
 class DBProxy {
@@ -135,7 +131,7 @@ class DatasetProxy {
         // update changed properties
         ...Object.entries(value)
           .map(([k, v]) => {
-            if (existing && deepEqual(existing[k], v)) {
+            if (existing && dequal(existing[k], v)) {
               return
             }
             return {
