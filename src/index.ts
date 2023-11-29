@@ -35,7 +35,7 @@ export interface Store<DB extends object> {
   settle(): Promise<void>
 }
 
-const isPrimitive = (v: any) => {
+const isPrimitive = (v: unknown) => {
   if (typeof v === 'object') {
     return v === null
   }
@@ -43,7 +43,7 @@ const isPrimitive = (v: any) => {
 }
 
 // TODO: fixme
-const deepEqual = (a: any, b: any) => {
+const deepEqual = (a: unknown, b: unknown) => {
   return a === b
 }
 
@@ -52,7 +52,7 @@ class DBProxy {
   constructor(s: TheStore<any>) {
     this.#store = s
   }
-  get(_: any, dataset: string) {
+  get(_: unknown, dataset: string) {
     return this.#store.datasetProxy(dataset)
   }
   set(): any {
@@ -64,14 +64,14 @@ class DBProxy {
   ownKeys() {
     return Object.keys(this.#store.mem)
   }
-  has(_: any, dataset: string) {
+  has(_: unknown, dataset: string) {
     const mem = this.#store.mem
     return mem && dataset in this.#store.mem
   }
   defineProperty(): any {
     throw new TypeError('cannot defineProperty on DB')
   }
-  getOwnPropertyDescriptor(_: any, p: string) {
+  getOwnPropertyDescriptor(_: unknown, p: string) {
     return {
       value: this.#store.datasetProxy(p),
       writable: true,
@@ -88,13 +88,13 @@ class DatasetProxy {
     this.#store = s
     this.#dataset = dataset
   }
-  get(_: any, id: string) {
+  get(_: unknown, id: string) {
     const dataset = this.#store.mem?.[this.#dataset]
     if (dataset && id in dataset && !dataset[id].tombstone) {
       return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
     }
   }
-  set(_: any, id: string, value: object): any {
+  set(_: unknown, id: string, value: object): any {
     if (!this.#store.mem) {
       throw new Error(
         `cannot save data without logged in user in dataset "${
@@ -172,7 +172,7 @@ class DatasetProxy {
     dataset[id] = value
     return true
   }
-  deleteProperty(_: any, id: string): any {
+  deleteProperty(_: unknown, id: string): any {
     this.#store.send([
       {
         dataset: this.#dataset,
@@ -191,14 +191,14 @@ class DatasetProxy {
     }
     return []
   }
-  has(_: any, id: string) {
+  has(_: unknown, id: string) {
     const row = this.#store.mem[this.#dataset]?.[id]
     return row && !row.tombstone
   }
   defineProperty(): any {
     throw new TypeError(`cannot defineProperty on dataset "${this.#dataset}"`)
   }
-  getOwnPropertyDescriptor(target: any, id: string) {
+  getOwnPropertyDescriptor(target: unknown, id: string) {
     const value = this.get(target, id)
     if (value) {
       return {
@@ -220,7 +220,7 @@ class RowProxy {
     this.#dataset = dataset
     this.#id = id
   }
-  get(_: any, prop: string) {
+  get(_: unknown, prop: string) {
     const row = this.#store.mem[this.#dataset][this.#id]
     const val = row[prop]
     // hasOwn allows pass-thru of prototype properties like constructor
@@ -233,7 +233,7 @@ class RowProxy {
       }" and property "${prop}" of type "${typeof val}" and value "${val}"`,
     )
   }
-  set(_: any, prop: string, value: any): any {
+  set(_: any, prop: string, value: unknown): any {
     this.#store.send([
       {
         dataset: this.#dataset,
@@ -245,7 +245,7 @@ class RowProxy {
     this.#store.mem[this.#dataset][this.#id][prop] = value
     return true
   }
-  deleteProperty(_: any, prop: string): any {
+  deleteProperty(_: unknown, prop: string): any {
     this.#store.send([
       {
         dataset: this.#dataset,
@@ -260,7 +260,7 @@ class RowProxy {
   ownKeys() {
     return Object.keys(this.#store.mem[this.#dataset][this.#id])
   }
-  has(_: any, p: string) {
+  has(_: unknown, p: string) {
     return p in this.#store.mem[this.#dataset][this.#id]
   }
   defineProperty(): any {
@@ -270,7 +270,7 @@ class RowProxy {
       }`,
     )
   }
-  getOwnPropertyDescriptor(target: any, prop: string) {
+  getOwnPropertyDescriptor(target: unknown, prop: string) {
     const value = this.get(target, prop)
     if (value) {
       return {
