@@ -19,11 +19,10 @@
     "trailingComma": "all"
   },
   "scripts": {
-    "build": "tsc",
     "test": "vite build && qunit-puppeteer",
     "cover": "npm run test && c8 report",
     "deploy": "npm run test && npm publish --access=public",
-    "prepare": "npm run build",
+    "prepare": "tsc",
     "dev": "vite"
   },
   "devDependencies": {
