@@ -314,6 +314,7 @@ QUnit.test('Logged In Integration', async assert => {
             },
           },
         })
+        unmountListener()
         stepsDone()
       },
     ]),
@@ -330,7 +331,6 @@ QUnit.test('Logged In Integration', async assert => {
   assert.equal(store.db.jedi.yoda.id, 'yoda', 'expect yoda id')
   assert.true('jedi' in store.db, 'jedi dataset now exists')
   await stepsWait
-  unmountListener()
 
   // TODO: delete all data?
   await store.settle()
