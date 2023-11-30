@@ -85,8 +85,8 @@ class DatasetProxy {
     this.#dataset = dataset
   }
   get(_: unknown, id: string) {
-    const dataset = this.#store.mem?.[this.#dataset]
-    if (dataset && id in dataset && !dataset[id].tombstone) {
+    // only tombstones prevent a get, otherwise let it get created as necessary
+    if (!this.#store.mem?.[this.#dataset]?.[id]?.tombstone) {
       return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
     }
   }
@@ -179,14 +179,16 @@ class DatasetProxy {
     return true
   }
   ownKeys() {
-    const dataset = this.#store.mem[this.#dataset]
+    const dataset = this.#store.mem?.[this.#dataset]
     if (dataset) {
+      // For some reason this filtering isn't necessary. Need to understand why.
+      //return Object.keys(dataset).filter(r => !!dataset[r].tombstone)
       return Object.keys(dataset)
     }
     return []
   }
   has(_: unknown, id: string) {
-    const row = this.#store.mem[this.#dataset]?.[id]
+    const row = this.#store.mem?.[this.#dataset]?.[id]
     return row && !row.tombstone
   }
   defineProperty(): any {
@@ -215,7 +217,10 @@ class RowProxy {
     this.#id = id
   }
   get(_: unknown, prop: string) {
-    const row = this.#store.mem[this.#dataset][this.#id]
+    const row = this.#store.mem?.[this.#dataset]?.[this.#id]
+    if (!row) {
+      return
+    }
     const val = row[prop]
     // hasOwn allows pass-thru of prototype properties like constructor
     if (isPrimitive(val) || !Object.hasOwn(row, prop)) {
@@ -236,7 +241,15 @@ class RowProxy {
         value: value,
       },
     ])
-    this.#store.mem[this.#dataset][this.#id][prop] = value
+    let dataset = this.#store.mem[this.#dataset]
+    if (!dataset) {
+      dataset = this.#store.mem[this.#dataset] = {}
+    }
+    let row = dataset[this.#id]
+    if (!row) {
+      row = dataset[this.#id] = { id: this.#id }
+    }
+    row[prop] = value
     return true
   }
   deleteProperty(_: unknown, prop: string): any {
@@ -248,14 +261,16 @@ class RowProxy {
         value: undefined,
       },
     ])
-    delete this.#store.mem[this.#dataset][this.#id][prop]
+    delete this.#store.mem[this.#dataset]?.[this.#id]?.[prop]
     return true
   }
   ownKeys() {
-    return Object.keys(this.#store.mem[this.#dataset][this.#id])
+    const row = this.#store.mem?.[this.#dataset]?.[this.#id]
+    return row ? Object.keys(row) : []
   }
   has(_: unknown, p: string) {
-    return p in this.#store.mem[this.#dataset][this.#id]
+    const row = this.#store.mem?.[this.#dataset]?.[this.#id]
+    return row ? p in row : false
   }
   defineProperty(): any {
     throw new TypeError(
@@ -308,7 +323,6 @@ class TheStore<DB extends object> implements Store<DB> {
         tokenSource: () => this.#auth.getBearerToken(),
       })
     this.#auth.subscribe(this.#onAuthChange.bind(this), false)
-
     this.#dbProxy = new Proxy({}, new DBProxy(this))
   }
 
