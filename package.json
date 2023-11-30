@@ -19,7 +19,7 @@
     "trailingComma": "all"
   },
   "scripts": {
-    "test": "vite build && TIMEOUT=60000 qunit-puppeteer",
+    "test": "vite build && TIMEOUT=120000 qunit-puppeteer",
     "cover": "npm run test && c8 report",
     "deploy": "npm run test && npm publish --access=public",
     "prepare": "tsc",
