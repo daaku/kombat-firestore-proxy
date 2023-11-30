@@ -380,6 +380,7 @@ class TheStore<DB extends object> implements Store<DB> {
       groupID,
     })
     this.syncDB = await SyncDB.new(remote, local)
+    await this.syncDB.sync()
   }
 
   datasetProxy(dataset: string) {
