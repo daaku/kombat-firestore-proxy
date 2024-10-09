@@ -20,6 +20,7 @@ export interface Opts {
   readonly auth: FirebaseAuth
   readonly api?: FirebaseAPI
   readonly name?: string
+  readonly groupID?: string
 }
 
 // Store provides the DB, that proxy to your various datasets.
@@ -300,6 +301,7 @@ class TheStore<DB extends object> implements Store<DB> {
   readonly #auth: FirebaseAuth
   readonly #api: FirebaseAPI
   readonly #name?: string
+  readonly #groupID?: string
   readonly #dbProxy: ProxyHandler<DB>
   readonly #pending: Set<Promise<void>> = new Set()
 
@@ -316,6 +318,7 @@ class TheStore<DB extends object> implements Store<DB> {
     this.#config = opts.config
     this.#auth = opts.auth
     this.#name = opts.name
+    this.#groupID = opts.groupID
     this.#api =
       opts.api ??
       makeFirebaseAPI({
@@ -373,7 +376,11 @@ class TheStore<DB extends object> implements Store<DB> {
     local.setDB(this.#idb)
     this.#local = local
 
-    const groupID = this.#name ? `${user.localId}.${this.#name}` : user.localId
+    const groupID = this.#groupID
+      ? this.#groupID
+      : this.#name
+        ? `${user.localId}.${this.#name}`
+        : user.localId
     const remote = new RemoteFirestore({
       config: this.#config,
       api: this.#api,
