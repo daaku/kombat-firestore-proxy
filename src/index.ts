@@ -293,6 +293,11 @@ class RowProxy {
   }
 }
 
+interface ChangeListenerWrapper {
+  listener: ChangeListener
+  un?: () => void
+}
+
 // TheStore is the internal concrete implementation which is returned. The
 // TypeScript API is limited by the interface it implements. The other bits are
 // for internal consumption.
@@ -304,6 +309,7 @@ class TheStore<DB extends object> implements Store<DB> {
   readonly #groupID?: string
   readonly #dbProxy: ProxyHandler<DB>
   readonly #pending: Set<Promise<void>> = new Set()
+  #listeners: ChangeListenerWrapper[] = []
 
   // this is reset as auth status changes
   #datasetProxies: Record<string, ProxyHandler<Record<string, any>>> = {}
@@ -335,10 +341,25 @@ class TheStore<DB extends object> implements Store<DB> {
   }
 
   listenChanges(cb: ChangeListener): () => void {
-    if (!this.#local) {
-      throw new Error('cannot listenChanges without a logged in user')
+    let un: (() => void) | undefined = undefined
+    if (this.#local) {
+      un = this.#local.listenChanges(cb)
     }
-    return this.#local.listenChanges(cb)
+    this.#listeners.push({
+      listener: cb,
+      un,
+    })
+    return () => {
+      this.#listeners = this.#listeners.filter(e => {
+        if (e.listener === cb) {
+          if (e.un) {
+            e.un()
+          }
+          return false
+        }
+        return true
+      })
+    }
   }
 
   static async new(opts: Opts) {
@@ -375,12 +396,18 @@ class TheStore<DB extends object> implements Store<DB> {
     await loadDatasetMem(this.mem, this.#idb)
     local.setDB(this.#idb)
     this.#local = local
+    this.#listeners.forEach(l => {
+      if (l.un) {
+        l.un()
+      }
+      l.un = local.listenChanges(l.listener)
+    })
 
     const groupID = this.#groupID
       ? this.#groupID
       : this.#name
-        ? `${user.localId}.${this.#name}`
-        : user.localId
+      ? `${user.localId}.${this.#name}`
+      : user.localId
     const remote = new RemoteFirestore({
       config: this.#config,
       api: this.#api,
