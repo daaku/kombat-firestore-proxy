@@ -85,20 +85,26 @@ class DatasetProxy {
     this.#store = s
     this.#dataset = dataset
   }
-  get(_: unknown, id: string) {
-    // only tombstones prevent a get, otherwise let it get created as necessary
-    if (!this.#store.mem?.[this.#dataset]?.[id]?.tombstone) {
-      return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
-    }
-  }
-  set(_: unknown, id: string, value: any): any {
+  #getDataset(id?: string): any {
     if (!this.#store.mem) {
       throw new Error(
         `cannot save data without logged in user in dataset "${
           this.#dataset
-        }" with row id "${id}"`,
+        }"` + (id ? `with row id "${id}"` : ''),
       )
     }
+    let dataset = this.#store.mem[this.#dataset]
+    if (!dataset) {
+      dataset = this.#store.mem[this.#dataset] = {}
+    }
+    return dataset
+  }
+  get(target: unknown, id: string) {
+    if (this.has(target, id)) {
+      return new Proxy({}, new RowProxy(this.#store, this.#dataset, id))
+    }
+  }
+  set(_: unknown, id: string, value: any): any {
     if (typeof value !== 'object') {
       throw new Error(
         `cannot use non object value in dataset "${
@@ -109,6 +115,8 @@ class DatasetProxy {
 
     // work with a clone, since we may modify it
     value = structuredClone(value)
+
+    // TODO: remove tombstone if exists
 
     // ensure we have an ID and it is what we expect
     if ('id' in value) {
@@ -124,8 +132,10 @@ class DatasetProxy {
       value.id = id
     }
 
+    const dataset = this.#getDataset(id)
+
     // only send messages for changed values.
-    const existing = this.#store.mem[this.#dataset]?.[id] ?? {}
+    const existing = dataset[id] ?? {}
     this.#store.send(
       // @ts-expect-error typescript doesn't understand filter
       [
@@ -160,10 +170,6 @@ class DatasetProxy {
       ],
     )
     // synchronously update our in-memory dataset.
-    let dataset = this.#store.mem[this.#dataset]
-    if (!dataset) {
-      dataset = this.#store.mem[this.#dataset] = {}
-    }
     dataset[id] = value
     return true
   }
@@ -176,17 +182,13 @@ class DatasetProxy {
         value: true,
       },
     ])
-    this.#store.mem[this.#dataset][id].tombstone = true
+    const dataset = this.#getDataset(id)
+    dataset[id].tombstone = true
     return true
   }
   ownKeys() {
-    const dataset = this.#store.mem?.[this.#dataset]
-    if (dataset) {
-      // For some reason this filtering isn't necessary. Need to understand why.
-      //return Object.keys(dataset).filter(r => !!dataset[r].tombstone)
-      return Object.keys(dataset)
-    }
-    return []
+    const dataset = this.#getDataset()
+    return Object.keys(dataset).filter(r => !dataset[r].tombstone)
   }
   has(_: unknown, id: string) {
     const row = this.#store.mem?.[this.#dataset]?.[id]

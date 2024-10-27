@@ -109,7 +109,11 @@ QUnit.test('Logged Out', async assert => {
   assert.notOk('jedi' in store.db, 'dataset in checks are false')
   assert.ok(store.db.jedi, 'but datasets are lazily created')
   assert.notOk('yoda' in store.db.jedi, 'object in checks are false')
-  assert.ok(store.db.jedi.yoda, 'but objects are lazily created')
+  assert.strictEqual(
+    store.db.jedi.yoda,
+    undefined,
+    'objects are undefined until created created',
+  )
 })
 
 QUnit.test('DBProxy: Cannot Set Property', async assert => {
@@ -208,7 +212,7 @@ QUnit.test('DatasetProxy: id mismatch', async assert => {
   }, /id mismatch/)
 })
 
-QUnit.test('can set property on row without it existing', async assert => {
+QUnit.test('DatasetProxy: delete objects', async assert => {
   const store = await initStore<DB>({
     config: fakeConfig(assert.id),
     auth: mockAuth.new(),
@@ -219,42 +223,12 @@ QUnit.test('can set property on row without it existing', async assert => {
   store.send = () => {}
   // @ts-expect-error mucking with internal state
   store.mem = {}
-  store.db.jedi.yoda.name = 'yoda'
-  assert.equal(store.db.jedi.yoda.name, 'yoda')
-})
-
-QUnit.test('can delete property on row without it existing', async assert => {
-  const store = await initStore<DB>({
-    config: fakeConfig(assert.id),
-    auth: mockAuth.new(),
-    api: apiThrows,
-    name: assert.id,
-  })
-  // @ts-expect-error mucking with internal state
-  store.send = () => {}
-  // @ts-expect-error mucking with internal state
-  store.mem = {}
-  // @ts-expect-error mucking with internal state
-  delete store.db.jedi.yoda.name
-  // spread since we're dealing with a proxy
-  assert.deepEqual({ ...store.db.jedi.yoda }, {})
-})
-
-QUnit.test('keys of dataset drop tombstone rows', async assert => {
-  const store = await initStore<DB>({
-    config: fakeConfig(assert.id),
-    auth: mockAuth.new(),
-    api: apiThrows,
-    name: assert.id,
-  })
-  // @ts-expect-error mucking with internal state
-  store.send = () => {}
-  // @ts-expect-error mucking with internal state
-  store.mem = {}
+  assert.deepEqual(store.db.jedi.yoda, undefined, 'start off undefined')
   store.db.jedi.yoda = yoda
-  assert.deepEqual(Object.keys(store.db.jedi), ['yoda'])
+  assert.deepEqual(Object.keys(store.db.jedi), ['yoda'], 'now in keys')
   delete store.db.jedi.yoda
-  assert.deepEqual(Object.keys(store.db.jedi), [])
+  assert.deepEqual(Object.keys(store.db.jedi), [], 'now not in keys')
+  assert.deepEqual(store.db.jedi.yoda, undefined, 'not undefined again')
 })
 
 const steps = (fns: any) => {
