@@ -116,8 +116,6 @@ class DatasetProxy {
     // work with a clone, since we may modify it
     value = structuredClone(value)
 
-    // TODO: remove tombstone if exists
-
     // ensure we have an ID and it is what we expect
     if ('id' in value) {
       if (id !== value.id) {
