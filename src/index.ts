@@ -181,7 +181,11 @@ class DatasetProxy {
       },
     ])
     const dataset = this.#getDataset(id)
-    dataset[id].tombstone = true
+    if (id in dataset) {
+      dataset[id].tombstone = true
+    } else {
+      dataset[id] = { tombstone: true }
+    }
     return true
   }
   ownKeys() {

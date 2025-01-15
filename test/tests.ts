@@ -251,6 +251,21 @@ QUnit.test('DatasetProxy: delete then recreate', async assert => {
   assert.deepEqual(store.db.jedi.yoda.name, 'yoda', 'find the name again')
 })
 
+QUnit.test('DatasetProxy: delete non-existing', async assert => {
+  const store = await initStore<DB>({
+    config: fakeConfig(assert.id),
+    auth: mockAuth.new(),
+    api: apiThrows,
+    name: assert.id,
+  })
+  // @ts-expect-error mucking with internal state
+  store.send = () => {}
+  // @ts-expect-error mucking with internal state
+  store.mem = {}
+  delete store.db.jedi.yoda
+  assert.deepEqual(store.db.jedi.yoda, undefined, 'not undefined')
+})
+
 const steps = (fns: any) => {
   let count = 0
   return (...rest: any) => {
