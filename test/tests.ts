@@ -2,7 +2,6 @@ import QUnit from 'qunit'
 import 'qunit/qunit/qunit.css'
 import { Auth, User } from '@daaku/firebase-auth'
 import { FirebaseAPI, FirebaseConfig } from '@daaku/firebase-rest-api'
-import { Changes } from '@daaku/kombat-indexed-db'
 import { deleteDB } from 'idb'
 import { customAlphabet } from 'nanoid'
 import { initStore } from '../src/index.js'
@@ -80,11 +79,16 @@ const fakeConfig = (name: string) =>
     projectID: name,
   })
 
-const testID = () =>
-  QUnit.config.current.testName.toLowerCase().replaceAll(/[^a-z]/g, '_')
+declare global {
+  interface Assert {
+    id: string
+  }
+}
 
 QUnit.hooks.beforeEach(async assert => {
-  assert.id = testID()
+  assert.id = QUnit.config.current.testName
+    .toLowerCase()
+    .replaceAll(/[^a-z]/g, '_')
   await deleteDB(`${assert.id}_${userDaaku}`)
   await deleteDB(`${assert.id}_${userShah}`)
 })

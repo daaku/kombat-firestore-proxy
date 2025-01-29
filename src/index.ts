@@ -6,7 +6,30 @@ import {
 } from '@daaku/firebase-rest-api'
 import { RemoteFirestore } from '@daaku/kombat-firestore'
 import { ChangeListener } from '@daaku/kombat-indexed-db'
-import { initStore as initBaseStore, Store } from './base.js'
+import {
+  initStore as initBaseStore,
+  Store,
+} from '@daaku/kombat-indexed-db/store'
+
+const loggedOutDataset = new Proxy(Object.freeze({}), {
+  set() {
+    throw new TypeError('cannot save data without logged in user')
+  },
+  deleteProperty() {
+    throw new TypeError('cannot delete data without logged in user')
+  },
+})
+const loggedOutDB = new Proxy(Object.freeze({}), {
+  get() {
+    return loggedOutDataset
+  },
+  set() {
+    throw new TypeError('cannot set on DB')
+  },
+  deleteProperty() {
+    throw new TypeError('cannot delete on DB')
+  },
+})
 
 export interface Opts {
   readonly config: FirebaseConfig
@@ -21,9 +44,6 @@ interface ChangeListenerWrapper {
   un?: () => void
 }
 
-// TheStore is the internal concrete implementation which is returned. The
-// TypeScript API is limited by the interface it implements. The other bits are
-// for internal consumption.
 class TheFireStore<DB extends object> implements Store<DB> {
   readonly #config: FirebaseConfig
   readonly #auth: FirebaseAuth
@@ -41,7 +61,7 @@ class TheFireStore<DB extends object> implements Store<DB> {
     this.#api =
       opts.api ??
       makeFirebaseAPI({
-        config: this.#config,
+        config: opts.config,
         tokenSource: () => this.#auth.getBearerToken(),
       })
     this.#auth.subscribe(this.#onAuthChange.bind(this), false)
@@ -84,8 +104,11 @@ class TheFireStore<DB extends object> implements Store<DB> {
   }
 
   get db(): DB {
-    // @ts-expect-error type bypass
-    return this.#store?.db
+    if (!this.#store) {
+      // @ts-expect-error type bypass
+      return loggedOutDB
+    }
+    return this.#store.db
   }
 
   async #onAuthChange(user: User | undefined) {
