@@ -12,6 +12,7 @@
     "sourceMap": true,
     "strict": true,
     "strictBindCallApply": true,
-    "target": "es2022"
+    "lib": ["ES2024"],
+    "target": "es2024"
   }
 }
