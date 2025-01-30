@@ -6,11 +6,8 @@ import {
 } from '@daaku/firebase-rest-api'
 import { RemoteFirestore } from '@daaku/kombat-firestore'
 import { ChangeListener } from '@daaku/kombat-indexed-db'
-import {
-  initStore as initBaseStore,
-  Store,
-} from '@daaku/kombat-indexed-db/store'
-
+import { initStore as initBaseStore } from '@daaku/kombat-indexed-db/store'
+import type { Store } from '@daaku/kombat-indexed-db/store'
 export { Store }
 
 const loggedOutDataset = new Proxy(Object.freeze({}), {
@@ -132,8 +129,8 @@ class TheFireStore<DB extends object> implements Store<DB> {
     const groupID = this.#groupID
       ? this.#groupID
       : this.#name
-        ? `${user.localId}.${this.#name}`
-        : user.localId
+      ? `${user.localId}.${this.#name}`
+      : user.localId
     const remote = new RemoteFirestore({
       config: this.#config,
       api: this.#api,
