@@ -50,6 +50,7 @@ class TheFireStore<DB extends object> implements Store<DB> {
   readonly #api: FirebaseAPI
   readonly #name?: string
   readonly #groupID?: string
+  readonly #pending: Set<Promise<void>> = new Set()
   #listeners: ChangeListenerWrapper[] = []
   #store?: Store<DB>
 
@@ -64,7 +65,11 @@ class TheFireStore<DB extends object> implements Store<DB> {
         config: opts.config,
         tokenSource: () => this.#auth.getBearerToken(),
       })
-    this.#auth.subscribe(this.#onAuthChange.bind(this), false)
+    this.#auth.subscribe(user => {
+      const p = this.#onAuthChange(user)
+      this.#pending.add(p)
+      p.finally(() => this.#pending.delete(p))
+    }, false)
   }
 
   close(): void {
@@ -72,6 +77,7 @@ class TheFireStore<DB extends object> implements Store<DB> {
   }
 
   async settle(): Promise<void> {
+    await Promise.allSettled(this.#pending.values())
     await this.#store?.settle()
   }
 

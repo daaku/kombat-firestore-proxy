@@ -38,7 +38,7 @@
     "@daaku/firebase-auth": "^2.4.0",
     "@daaku/firebase-rest-api": "^2.1.0",
     "@daaku/kombat": "^2.5.0",
-    "@daaku/kombat-firestore": "^2.2.0",
+    "@daaku/kombat-firestore": "^2.7.0",
     "@daaku/kombat-indexed-db": "^3.7.0"
   }
 }
