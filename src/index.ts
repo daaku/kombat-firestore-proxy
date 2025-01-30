@@ -11,6 +11,8 @@ import {
   Store,
 } from '@daaku/kombat-indexed-db/store'
 
+export { Store }
+
 const loggedOutDataset = new Proxy(Object.freeze({}), {
   set() {
     throw new TypeError('cannot save data without logged in user')
@@ -130,8 +132,8 @@ class TheFireStore<DB extends object> implements Store<DB> {
     const groupID = this.#groupID
       ? this.#groupID
       : this.#name
-      ? `${user.localId}.${this.#name}`
-      : user.localId
+        ? `${user.localId}.${this.#name}`
+        : user.localId
     const remote = new RemoteFirestore({
       config: this.#config,
       api: this.#api,
